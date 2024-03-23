@@ -1,0 +1,736 @@
+<!doctype html>
+<html lang="ja">
+
+<head>
+    <meta charset="utf-8" />
+    <script src="js/jquery-2.1.3.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.2.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+    <link rel="stylesheet" href="css/sample.css">
+    <title>ジャーナリングアプリ</title>
+    <style>
+        body {
+            background-image: url(img/background.png);
+            font-family:Georgia, 'Times New Roman', Times, serif
+            }
+        </style>
+
+</head>
+
+<body>
+    <header>
+        <h1><i>Journaling Diary</i></h1>
+    </header>
+
+    <main>
+        <!-- インプット画面 -->
+        <!-- <button id="save2">SAVE</button>
+        <button id="clear">CLEAR</button> -->
+        <!-- <button id="load">読み込み</button> -->
+        
+            <div class="diary_area" id="diary_area">
+                <div class="diary">
+                    <h2>Diary</h2>
+                    <p>今日はどんな1日でしたか？</p>
+                    <button id="showView">過去の日記とジャーナリングを見る</button><br>
+            
+                <!-- 日付を入れる -->
+                <label for="datepicker">select the date:</label>
+                <input type="date" id="datepicker">
+                <textarea id="text" cols="30" rows="10"></textarea><br>
+                <input type="file" id="fileInput"> 
+                <img id="preview" src="" style="display: none;"> 
+                <button id="send">送信</button><br>
+            </div>
+            </div>
+
+            <div class="output">
+                <div id="output" style="display: none;">  
+                <button id="return">戻る</button><br>
+                </div>
+            </div>
+        
+
+        <div class="emotion_area" id="emotion_area">
+            <h2>How are you feeling?</h2>
+            <p>自分の気持ちに近いものをクリックしてください。3つまで選択できます</p>
+                
+                <h3>selected emotion</h3><br>
+                <label for="datepicker2">select the date:</label>
+                <input type="date" id="datepicker2">
+                <button id="save3">SAVE</button>
+                <button id="clear2">CLEAR</button>
+                <div class ="emotion_picks">
+                    <div class="selected_emotions_container" id="selected_emotions1">感情1</div>
+                    <div class="selected_emotions_container" id="selected_emotions2">感情2</div>
+                    <div class="selected_emotions_container" id="selected_emotions3">感情3</div>
+                    <!-- ここに選択された感情を表示 -->
+                 </div>
+            
+            <div class="emotion2" id="emotion2">
+            <ul class="orange">
+                <li class="emotion" id="satisfaction">満足</li>
+                <li class="emotion" id="thankyou">感謝</li>
+                <li class="emotion" id="happy">嬉しい</li>
+                <li class="emotion" id="wakuwaku">ワクワク</li>
+            </ul>
+            <ul class="yellow">
+                <li class="emotion" id="like">好き</li>
+                <li class="emotion" id="impressed">感心</li>
+                <li class="emotion" id="fun">面白い</li>
+                <li class="emotion" id="joy">楽しい</li>
+
+            </ul>
+            <ul class="yellow-green">
+                <li class="emotion" id="sukkiri">すっきり</li>
+                <li class="emotion" id="dokidoki">ドキドキ</li>
+                <li class="emotion" id="peace">安心</li>
+                <li class="emotion" id="calm">穏やか</li>
+            </ul>    
+            <ul class="thin-green">
+                <li class="emotion" id="usually">普通</li>
+                <li class="emotion" id="bore">退屈</li>
+                <li class="emotion" id="moyamoya">もやもや</li>
+                <li class="emotion" id="tension">緊張</li>
+            </ul>    
+            <ul class="green">
+                <li class="emotion" id="anxiety">不安</li>
+                <li class="emotion" id="sad">悲しい</li>
+                <li class="emotion" id="tired">疲れた</li>
+                <li class="emotion" id="iraira">イライラ</li>
+            </ul>    
+            </div>
+        </div>
+
+        <div class="question_area" id="question_area">
+            <div class="todayQuestion">
+                <h2>Questions about you</h2>
+                <button id="question">select questions<br>他の問いも見る</button>
+            </div>
+            <div id="select_question">Question：</div>
+            <textarea id="answer"></textarea>
+            <input type="file" id="fileInput2"> 
+            <img id="preview2" src="" style="display: none;"> 
+            <button id="answerSave">投稿</button>
+            <button id="answerClear">削除</button><br>
+            <!-- <button id="allAnswers">See previous answers<br>これまでの回答をみる</button>
+            <textarea id="pages"></textarea> -->
+            </div>
+        </div>
+
+        <div style="position: relative;">
+            <canvas id="myChart" width="400" height="200"></canvas>
+            <div style="position: absolute; bottom: 0; left: 0; width: 100%; height: 50px; background-color: rgba(176, 196, 222, 0.3);display: none;"></div>
+        </div>
+    
+    </main>
+    <footer><small>Journaling Diary</small></footer>
+
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<script type="module">
+// Import the functions you need from the SDKs you need
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+import { getDatabase, ref, onValue, push, set, get , child, update, remove, onChildAdded, onChildChanged, onChildRemoved,runTransaction } 
+from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
+import { getStorage, ref as storageRef ,uploadBytes,getDownloadURL, getBlob } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-storage.js";
+
+
+
+// アウトプットを表示
+$("#showView").on("click",function(){
+    console.log("できました");
+
+// Firebaseからメッセージを受信して表示する処理
+onChildAdded(dbRef, function(data) {
+    const diary = data.val();
+    const key = data.key;
+
+    // メッセージのHTML要素を作成
+    let m = '<div id="' + key + '" class="day">' + diary.date + '</div>';
+    let h = '<div id="' + key + '" class="post">';
+    h += '<div class="mytext">';
+
+        // コメントが長い場合は一部を表示し、省略記号を追加
+        const maxCommentLength = 150; // 表示するコメントの最大文字数
+        const truncatedComment = diary.text.length > maxCommentLength ? diary.text.substring(0, maxCommentLength) + "..." : diary.text;
+        h += '<span contentEditable="true" id="' + key + '_update">' + truncatedComment + '</span>';
+    h += '<span class="remove" data-key="' + key + '">🚮</span>';
+    h += '<span class="update" data-key="' + key + '">🆙</span>';
+    h += '</div>';
+
+    // 画像が存在する場合のみ画像を追加
+    if (diary.imageURL) {
+        h += '<img class="myimg" src="' + diary.imageURL + '">';
+    }
+
+    h += '</div>'; // 親要素の終了タグ
+
+    // mとhを1つの要素にまとめる
+    const $combined = $(m + h);
+
+    // 日付を基準にして時系列に並べる
+    const $output = $("#output");
+    const $existingDays = $output.children(".day");
+    let inserted = false;
+    $existingDays.each(function() {
+        const existingDate = new Date($(this).text());
+        const currentDate = new Date(diary.date);
+        if (currentDate > existingDate) {
+            $(this).before($combined);
+            inserted = true;
+            return false; // eachループから抜ける
+        }
+    });
+
+    if (!inserted) {
+        $output.append($combined);
+    }
+})
+
+// ダイアリーエリアを非表示にする
+$("#diary_area").hide();
+    // 感情エリアを非表示にする
+    $("#emotion_area").hide();
+    // 問題エリアを非表示にする
+    $("#question_area").hide();
+    //アウトプットを表示
+    $("#output").show();
+});
+
+const app= initializeApp(firebaseConfig);
+const db = getDatabase(app); 
+const dbRef = ref(db,"diary");
+const storage = getStorage(app);
+const inputRef = document.querySelector("#fileInput");
+const formRef = document.querySelector("#form");
+
+// "fileInput" の変更イベントを監視
+$("#fileInput").on("change", async function() {
+    // 選択されたファイルを取得
+    const file = this.files[0];
+    
+    // ファイルをプレビューするための処理
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        // プレビュー用の要素に画像を表示
+        $("#preview").attr("src", e.target.result);
+    };
+    reader.readAsDataURL(file);
+    $("#preview").show();
+});
+
+const bucketName = "gs://commonapli.appspot.com"; // Firebase Storageのバケット名を設定
+const handleSubmit = async () => {
+  const file = inputRef.files[0];
+  if (!file) {
+        console.log("No file selected.");
+        return null; // ファイルが選択されていない場合はnullを返す
+  }
+
+  const ext = file.name.split(".").pop();
+  const fileName = `${Date.now()}.${ext}`;
+  const filePath = `images/${fileName}`;
+  console.log(filePath);
+  const fileRef = storageRef(storage, filePath);
+  console.log(fileRef);
+  await uploadBytes(fileRef, file);
+  console.log("Uploaded a blob or file!");
+
+  // フォームを送信したときにファイル名を返す
+  return fileName;
+
+};
+
+const handleDownload = async () => {
+  const fileName = await handleSubmit(); // フォームを送信してファイル名を取得
+  const fileRef = storageRef(storage, `images/${fileName}`);
+  const url = await getDownloadURL(fileRef);
+  console.log(url);
+
+
+};
+
+
+// 送信ボタンのクリックイベント
+$("#send").on("click", async function(){
+
+    // 画像のアップロード処理と同様に、位置情報を含めてメッセージを作成
+    const fileName = await handleSubmit(); // フォームを送信してファイル名を取得
+    let imageURL = null;
+    if (fileName) {
+        const fileRef = storageRef(storage, `images/${fileName}`);
+        imageURL = await getDownloadURL(fileRef);
+    }
+    const diary = {
+        text: $("#text").val(),
+        date: $("#datepicker").val(),
+        imageURL: imageURL// imageURL フィールドに URL を追加
+    };
+    const newPostRef = push(dbRef);
+    set(newPostRef, diary); // コメントデータを Realtime Database に保存
+
+// Firebaseからメッセージを受信して表示する処理
+onChildAdded(dbRef, function(data) {
+    const diary = data.val();
+    const key = data.key;
+
+    // メッセージのHTML要素を作成
+    let m = '<div id="' + key + '" class="day">' + diary.date + '</div>';
+    let h = '<div id="' + key + '" class="post">';
+    h += '<div class="mytext">';
+
+        // コメントが長い場合は一部を表示し、省略記号を追加
+        const maxCommentLength = 150; // 表示するコメントの最大文字数
+        const truncatedComment = diary.text.length > maxCommentLength ? diary.text.substring(0, maxCommentLength) + "..." : diary.text;
+        h += '<span contentEditable="true" id="' + key + '_update">' + truncatedComment + '</span>';
+    h += '<span class="remove" data-key="' + key + '">🚮</span>';
+    h += '<span class="update" data-key="' + key + '">🆙</span>';
+    h += '</div>';
+
+    // 画像が存在する場合のみ画像を追加
+    if (diary.imageURL) {
+        h += '<img class="myimg" src="' + diary.imageURL + '">';
+    }
+
+    h += '</div>'; // 親要素の終了タグ
+
+    // mとhを1つの要素にまとめる
+    const $combined = $(m + h);
+
+    // 日付を基準にして時系列に並べる
+    const $output = $("#output");
+    const $existingDays = $output.children(".day");
+    let inserted = false;
+    $existingDays.each(function() {
+        const existingDate = new Date($(this).text());
+        const currentDate = new Date(diary.date);
+        if (currentDate > existingDate) {
+            $(this).before($combined);
+            inserted = true;
+            return false; // eachループから抜ける
+        }
+    });
+
+    if (!inserted) {
+        $output.append($combined);
+    }
+     // 入力フォームをリセット
+    $("#text").val("");
+    $("#fileInput").val("");
+    $("#preview").hide();
+
+    // ダイアリーエリアを非表示にする
+    $("#diary_area").hide();
+    // 感情エリアを非表示にする
+    $("#emotion_area").hide();
+    // 問題エリアを非表示にする
+    $("#question_area").hide();
+    //アウトプットを表示
+    $("#output").show();
+});
+});
+
+
+
+
+// 削除イベント
+$("#output").on("click",".remove",function(){
+  console.log("削除します");
+  const key =$(this).attr("data-key");
+  const remove_item =ref(db,"diary/"+key);
+  console.log(remove_item);
+  remove(remove_item); //Firebaseデータ削除関数
+});
+
+// 更新イベント
+$("#output").on("click",".update",function(){
+  console.log("更新します");
+  const key =$(this).attr("data-key");
+  update(ref(db,"diary/"+key), {
+      text:$("#"+key+'_update').html()
+  });
+
+  // 削除処理がfirebase側で実行されたらイベント発生！
+onChildRemoved(dbRef,(data)=> {
+  $("#"+data.key).remove();  //DOM操作関数（対象を削除）
+})
+});
+
+// 更新処理がfirebase側で実行されたらイベント発生！
+onChildChanged(dbRef,(data)=>{
+    const newText = data.val().text || ''; // 新しいテキストを取得する。テキストが未定義の場合は空文字列にする
+    $("#"+data.key+'_update').html(newText); // テキストを更新
+    $("#"+data.key+'_update').fadeOut(800).fadeIn(800); // フェードイン・アウト
+});
+
+ 
+// 今日の日付を取得できるnew Dateを格納
+document.addEventListener('DOMContentLoaded', function() {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, '0');
+  const date = String(today.getDate()).padStart(2, '0');
+  const todayString = `${year}-${month}-${date}`;
+  document.querySelector('#datepicker').value = todayString;
+});
+
+
+// 感情を選択する
+let selectedEmotionsIndex = 1; // 選択された要素を挿入するインデックスを初期化する
+// 1．選択する
+     $(".emotion").on("click",function(){
+        console.log("OK");
+        const selectedItem = $(this).text();
+    // 選択された要素を表示する
+    $(`#selected_emotions${selectedEmotionsIndex}`).text(selectedItem);
+   // 次の選択された要素を挿入するために、インデックスを更新する
+   selectedEmotionsIndex++;
+// インデックスが3を超えた場合は1に戻す
+if (selectedEmotionsIndex > 3) {
+    selectedEmotionsIndex = 1;
+}
+});
+
+//感情のスコア
+// 1.各感情のスコアを定義する
+const emotionScores = {
+    "満足": 5,
+    "感謝": 5,
+    "嬉しい": 5,
+    "ワクワク":5,
+    "好き":3,
+    "感心":3,
+    "面白い":3,
+    "楽しい":3,
+    "すっきり":1,
+    "ドキドキ":1,
+    "安心":1,
+    "穏やか":1,
+    "普通":-1,
+    "退屈":-1,
+    "もやもや":-1,
+    "緊張":-1,
+    "不安":-3,
+    "悲しい":-3,
+    "疲れた":-3,
+    "イライラ":-3,
+};
+
+// 選択された感情から合計スコアを計算する関数
+function calculateTotalScore(selectedEmotions) {
+    let totalScore = 0;
+    selectedEmotions.forEach(emotion => {
+        totalScore += emotionScores[emotion];
+    });
+    return totalScore;
+}
+
+// 縦軸がスコア、横軸が日付のグラフを作る
+// 日付ごとのスコアを記録するオブジェクト
+const scoresByDate = {};
+
+const dbRef2 = ref(db,"emotions");
+// SAVEボタンがクリックされた時に実行される処理
+    
+    $("#save3").on("click", function() {
+        console.log("OKOK");
+        const selectedEmotions = [];
+        console.log(selectedEmotions);
+        for (let i = 1; i <= 3; i++) {
+            const emotion = $(`#selected_emotions${i}`).text();
+            if (emotion !== "感情1") {
+                selectedEmotions.push(emotion);
+            }
+        }
+        const currentDate = $("#datepicker2").val();
+        console.log(currentDate);
+        const totalScore = calculateTotalScore(selectedEmotions);
+        // データオブジェクトを作成
+    const data = {
+        date: currentDate,
+        score: totalScore
+    };
+
+    // Firebase Realtime Databaseにデータを保存する
+    const newPostRef = push(dbRef2);
+    set(newPostRef, data);
+}); 
+
+// ボタン要素を取得
+const saveButton = document.getElementById('save3');
+
+// データをグラフにする
+// ボタンがクリックされた時の処理
+saveButton.addEventListener('click', () => {
+// Firebaseからデータを取得する
+get(dbRef2).then((snapshot) => {
+    if (snapshot.exists()) {
+        const data = snapshot.val();
+
+        // データを日付順にソートする
+        const sortedData = Object.entries(data).sort(([dateA], [dateB]) => new Date(dateA) - new Date(dateB));
+        console.log(sortedData);
+        const dates = [];
+        const scores = [];
+        console.log(dates);
+        console.log(scores);
+
+       // 日付とスコアの配列を作成する
+sortedData.forEach(([key, entry]) => {
+    dates.push(entry.date); // データから直接日付を取得
+    scores.push(entry.score);
+});
+
+        // Chart.jsでグラフを描画する
+        const ctx = document.getElementById('myChart').getContext('2d');
+        const myChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: dates,
+                datasets: [{
+                    label: 'Score',
+                    data: scores,
+                    fill: true,
+                    borderColor: 'rgba(54, 162, 235, 1)', // 線の色を青に設定
+        backgroundColor: function(context) {
+            // スコアが0未満の場合は赤色、0以上の場合は青色
+            return context.dataset.data[context.dataIndex] < 0 ? 'rgba(255, 99, 132, 0.2)' : 'rgba(54, 162, 235, 0.2)';
+        console.log(context.dataIndex);
+        },
+                    tension: 0.1,
+                   
+                }]
+            },
+    options: {
+        plugins: {
+            legend: {
+                display: false // 凡例を非表示にする
+            }
+        },
+                scales: {
+                    x: [{ 
+                        type: 'time',
+                        time: {
+                            unit: 'day',
+                            displayFormats: {
+                                day: 'YYYY-MM-DD'
+                            }
+                        }
+                    }],
+                    y: {
+                beginAtZero: true,
+                gridLines: {
+                    color: 'rgba(255, 0, 0, 0.5)' // 赤色の線を引く
+                    }
+                }
+            }
+        }
+        });
+    } else {
+        console.log("No data available");
+    }
+}).catch((error) => {
+    console.error("Error getting data: ", error);
+});
+
+});
+    
+
+
+
+// 問いと回答の定義
+const questions = [
+    "人生で最もワクワクした時はどんな時ですか？またそれはなぜですか？",
+    "今後の人生において、何がなんでもやりたいことは何ですか？",
+    "あなたがとても長く没頭できることは何ですか？",
+    "最近感動したことは何ですか？",
+    "最後に心揺さぶられたことは何ですか？",
+    "あなたはストレスがかかったとき、どんな行動をしますか？",
+    "自分の心が温まるときはどんな時ですか？",
+    "あなたが決断するときに大事にしていることは何ですか？",
+    "あなたが魅力に感じる人はどんな人ですか？", 
+    "今、あなたの前に「どこでもドア」が現れました。どこに行きたいですか？",
+];
+    
+// 最初のページで問いを出しておく
+document.addEventListener('DOMContentLoaded', function() {
+    // ページ読み込み時にランダムな問いを選択して表示する
+    const r = Math.floor(Math.random() * questions.length); // 問いの数に合わせて修正
+    const selectedQuestion = questions[r];
+    // const selectedAnswer = questionsAndAnswers[r].answer;
+    $("#select_question").text(selectedQuestion); // ランダムな問いを表示
+    // $("#answer").val(selectedAnswer); // 対応する回答を表示
+});
+
+
+// ランダムの問いを出す
+$("#question").on("click", function() {
+    const r = Math.floor(Math.random() * 10); // 0から9までのランダムな整数を生成⇒これだと1～10 const r = Math.ceil(Math.random() * 10);
+    const selectedQuestion = questions[r]; // ランダムに選択された問い
+    // const selectedAnswer = questionsAndAnswers[r].answer; // 選択された問いに対応する回答
+    $("#select_question").text(selectedQuestion); // 問いを表示
+
+});
+
+ // 問いの答えを削除するとき
+ $("#answerClear").on("click", function () {
+    alert("削除しました");
+    localStorage.removeItem("answers");
+    $("#answer").val("");
+    $("#pages").val("");
+});
+
+//問いのところの画像アップデート
+$("#fileInput2").on("change", async function() {
+    // 選択されたファイルを取得
+    const file = this.files[0];
+    
+    // ファイルをプレビューするための処理
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        // プレビュー用の要素に画像を表示
+        $("#preview2").attr("src", e.target.result);
+    };
+    reader.readAsDataURL(file);
+    $("#preview2").show();
+
+const bucketName = "gs://commonapli.appspot.com"; // Firebase Storageのバケット名を設定
+const handleSubmit = async () => {
+  const file = inputRef.files[0];
+  if (!file) {
+        console.log("No file selected.");
+        return null; // ファイルが選択されていない場合はnullを返す
+  }
+
+  const ext = file.name.split(".").pop();
+  const fileName = `${Date.now()}.${ext}`;
+  const filePath = `images/${fileName}`;
+  console.log(filePath);
+  const fileRef = storageRef(storage, filePath);
+  console.log(fileRef);
+  await uploadBytes(fileRef, file);
+  console.log("Uploaded a blob or file!");
+
+  // フォームを送信したときにファイル名を返す
+  return fileName;
+}
+
+const handleDownload = async () => {
+  const fileName = await handleSubmit(); // フォームを送信してファイル名を取得
+  const fileRef = storageRef(storage, `images/${fileName}`);
+  const url = await getDownloadURL(fileRef);
+  console.log(url);
+};
+});
+
+//問いの答えの保存
+// 現在の日付を取得する
+const currentDate = new Date();
+
+// 年、月、日を取得する
+const year = currentDate.getFullYear();
+const month = String(currentDate.getMonth() + 1).padStart(2, '0'); // 月は0から始まるため、+1する
+const day = String(currentDate.getDate()).padStart(2, '0');
+
+// フォーマットした日付を作成する（例：2024-03-19）
+const todayString = `${year}-${month}-${day}`;
+
+$("#answerSave").on("click",async function(){
+   // 画像のアップロード処理と同様に、位置情報を含めてメッセージを作成
+   const fileName = await handleSubmit(); // フォームを送信してファイル名を取得
+    let imageURL = null;
+    if (fileName) {
+                const fileRef = storageRef(storage, `images/${fileName}`);
+                imageURL = await getDownloadURL(fileRef);
+            }
+
+    // 質問と回答を取得して連結
+    const selectedQuestion = $("#select_question").text(); // 質問を取得
+    const selectedAnswer = $("#answer").val(); // 回答を取得
+    const text = "<div style='text-align: left;'>" + selectedQuestion + "<br>" + selectedAnswer + "<br><span style='color:red;'>ジャーナリング</span>"; // 質問と回答を連結
+
+    const answer = {
+        text: text,
+        date: todayString,
+        imageURL: imageURL// imageURL フィールドに URL を追加
+    };
+    const newPostRef = push(dbRef);
+    set(newPostRef, answer); // コメントデータを Realtime Database に保存
+
+// Firebaseからメッセージを受信して表示する処理
+onChildAdded(dbRef, function(data) {
+    const answer = data.val();
+    console.log(answer);
+    const key =data.key;
+    console.log(key);
+
+     // メッセージのHTML要素を作成
+     let m = '<div id="' + key + '" class="day">' + answer.date + '</div>';
+    let h = '<div id="' + key + '" class="post" style="display: flex;">';
+        h = '<div id="'+key+'" class="post">';
+        h += '<span contentEditable="true" id="'+key+'_update">'+answer.text+'</span>';
+        h += '<span class="remove" data-key="'+key+'">🚮</span>'
+       h += '<span class="update" data-key="'+key+'">🆙</span>'
+       h += '</p>';
+    // 画像が存在する場合のみ画像を追加
+    if (answer.imageURL) {
+        h += '<img class="myimg" src="' + answer.imageURL + '">';
+    }
+
+    h += '</div>'; // 親要素の終了タグ
+
+    // mとhを1つの要素にまとめる
+    const $combined = $(m + h);
+
+    // 日付を基準にして時系列に並べる
+    const $output = $("#output");
+    const $existingDays = $output.children(".day");
+    let inserted = false;
+    $existingDays.each(function() {
+        const existingDate = new Date($(this).text());
+        const currentDate = new Date(answer.date);
+        if (currentDate > existingDate) {
+            $(this).before($combined);
+            inserted = true;
+            return false; // eachループから抜ける
+        }
+    });
+
+    if (!inserted) {
+        $output.append($combined);
+    }
+//     //入力をクリア
+// $("#answer").val("");
+ // ダイアリーエリアを非表示にする
+ $("#diary_area").hide();
+    // 感情エリアを非表示にする
+    $("#emotion_area").hide();
+    // 問題エリアを非表示にする
+    $("#question_area").hide();
+    //アウトプットを表示
+    $("#output").show();
+});
+}); 
+
+// 戻るボタン
+$(document).on("click", "#return", function() {
+    console.log("戻るボタンがクリックされました");
+    // 他の処理をここに追加する
+
+     //アウトプットを非表示
+     $("#output").hide();
+    // ダイアリーエリアを表示にする
+    $("#diary_area").show();
+    // 感情エリアを表示にする
+    $("#emotion_area").show();
+    // 問題エリアを表示にする
+    $("#question_area").show();
+   
+});
+
+
+</script>
+</body>
+
+</html>
